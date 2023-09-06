@@ -38,8 +38,9 @@ IMGEXT      := png
 XPMEXT      := xpm
 SYMEXT      := SYM
 
-BUILDDIR    := build/$(OBJDIR)
-TARGETDIR   := build/$(BINDIR)
+BUILDBASE   := build
+BUILDDIR    := $(BUILDBASE)/$(OBJDIR)
+TARGETDIR   := $(BUILDBASE)/$(BINDIR)
 
 #Flags, Libraries and Includes
 
@@ -91,9 +92,9 @@ export COMPILED
 #   /usr/local/bin/linapple
 #   /usr/local/etc/linapple.conf
 #   /usr/local/share/Master.dsk
-size1 := $(shell du -s ./build/bin 2>&1 | cut -f 1)
-size2 := $(shell du -s ./build/etc/ 2>&1 | cut -f 1)
-size3 := $(shell du -s ./build/share/ 2>&1 | cut -f 1)
+size1 := $(shell du -s ./$(BUILDBASE)/bin 2>&1 | cut -f 1)
+size2 := $(shell du -s ./$(BUILDBASE)/etc/ 2>&1 | cut -f 1)
+size3 := $(shell du -s ./$(BUILDBASE)/share/ 2>&1 | cut -f 1)
 SIZE  := $(shell echo `expr $(size1) + $(size2) + $(size3) 2>&1` )
 
 # DEBIAN/conffiles
@@ -138,28 +139,28 @@ remake: distclean all
 #Create XPM versions of images
 images: $(DSTIMGS) directories
 
-resources: directories images build/$(CONFIGDIR)/linapple.conf build/$(DATADIR)/Master.dsk
+resources: directories images $(BUILDBASE)/$(CONFIGDIR)/linapple.conf $(BUILDBASE)/$(DATADIR)/Master.dsk
 
-build/$(CONFIGDIR)/linapple.conf: $(RESDIR)/linapple.conf
+$(BUILDBASE)/$(CONFIGDIR)/linapple.conf: $(RESDIR)/linapple.conf
 	@cp $< $@
 
-build/$(DATADIR)/Master.dsk: $(RESDIR)/Master.dsk
+$(BUILDBASE)/$(DATADIR)/Master.dsk: $(RESDIR)/Master.dsk
 	@cp $< $@
 
 #Copy symbol files next to binary
 symbolfiles: $(DSTSYMS)
 
 directories:
-	@mkdir -p $(BUILDDIR) $(TARGETDIR) build/$(DATADIR) build/$(CONFIGDIR)
+	@mkdir -p $(BUILDDIR) $(TARGETDIR) $(BUILDBASE)/$(DATADIR) $(BUILDBASE)/$(CONFIGDIR)
 
 #Clean only Objects
 clean:
-	@$(RM) -rf $(BUILDDIR)
+	@$(RM) -rf $(BUILDBASE)/
 
 #Full Clean, Objects and Binaries
 #https://www.gnu.org/prep/standards/html_node/Standard-Targets.html
 distclean: clean
-	@$(RM) -rf build
+	@$(RM) -rf $(BUILDBASE)
 	@find . -type f -iname '*~' -exec rm -f {} \;
 	@$(RM) $(TARGET)-$(VERSION).deb
 
@@ -189,9 +190,9 @@ $(TARGETDIR)/%.$(SYMEXT): $(RESDIR)/%.$(SYMEXT)
 	cp $< $@
 
 install: all
-	install -D --target-directory "$(DESTDIR)/$(BINDIR)" build/$(BINDIR)/$(TARGET)
-	install -D --target-directory "$(DESTDIR)/$(DATADIR)" build/$(DATADIR)/Master.dsk
-	install -D --target-directory "$(DESTDIR)/$(CONFIGDIR)" build/$(CONFIGDIR)/$(PACKAGE).conf
+	install -D --target-directory "$(DESTDIR)/$(BINDIR)" $(BUILDBASE)/$(BINDIR)/$(TARGET)
+	install -D --target-directory "$(DESTDIR)/$(DATADIR)" $(BUILDBASE)/$(DATADIR)/Master.dsk
+	install -D --target-directory "$(DESTDIR)/$(CONFIGDIR)" $(BUILDBASE)/$(CONFIGDIR)/$(PACKAGE).conf
 
 uninstall:
 	$(RM) $(DESTDIR)/bin/$(TARGET)
@@ -200,7 +201,7 @@ uninstall:
 
 .ONESHELL:
 deb:
-	@if [ ! -d build ]; then
+	@if [ ! -d $(BUILDBASE) ]; then
 		@echo "$$COMPILED"
 		@exit 0
 	@fi
@@ -210,9 +211,9 @@ deb:
 	@mkdir -p $(PKGDIR)/$(DESTDIR)/$(BINDIR)
 	@echo "$$CONFFILES" > $(PKGDIR)/DEBIAN/conffiles
 	@echo "$$CONTROL" > $(PKGDIR)/DEBIAN/control
-	@cp -r build/bin/$(TARGET) $(PKGDIR)/$(DESTDIR)/$(BINDIR)
-	@cp -r build/etc/ $(PKGDIR)/$(DESTDIR)
-	@cp -r build/share/ $(PKGDIR)/$(DESTDIR)
+	@cp -r $(BUILDBASE)/bin/$(TARGET) $(PKGDIR)/$(DESTDIR)/$(BINDIR)
+	@cp -r $(BUILDBASE)/etc/ $(PKGDIR)/$(DESTDIR)
+	@cp -r $(BUILDBASE)/share/ $(PKGDIR)/$(DESTDIR)
 	@cd $(PKGDIR)
 	@find . -type d -name "DEBIAN" -prune -o -type f -printf '%P ' | xargs md5sum > DEBIAN/md5sums
 	@cd ../..
